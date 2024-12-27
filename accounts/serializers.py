@@ -7,6 +7,13 @@ from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
 from .models import PersonalInformation
 import re 
+from . import models
+
+class UserSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(many=False)
+    class Meta:
+        model = models.PersonalInformation
+        fields = '__all__'
 
 class RegistrationSerializer(serializers.ModelSerializer):
     conform_password = serializers.CharField(required=True)

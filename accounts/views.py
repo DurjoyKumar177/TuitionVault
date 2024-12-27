@@ -12,6 +12,16 @@ from django.core.mail import EmailMultiAlternatives
 from .models import PersonalInformation
 from .serializers import RegistrationSerializer, PersonalInformationSerializer
 from django.shortcuts import redirect
+from rest_framework.authtoken.models import Token
+from django.contrib.auth import authenticate, login, logout
+from rest_framework.permissions import IsAuthenticated
+from . import serializers
+from . import models
+from rest_framework import viewsets
+
+class accountsViewset(viewsets.ModelViewSet):
+    queryset = models.PersonalInformation.objects.all()
+    serializer_class = serializers.UserSerializer
 
 class UserRegistrationApiview(APIView):
     serializer_class = RegistrationSerializer
@@ -79,3 +89,29 @@ class PersonalInformationView(APIView):
             return Response({"message": "Personal information saved and verification email sent."}, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class UserLoginApiview(APIView):
+    def post(self, request):
+        serializer = serializers.UserLoginSerializer(data=self.request.data)
+        if serializer.is_valid():
+            username = serializer.validated_data['username']
+            password = serializer.validated_data['password']
+            
+            user = authenticate(username=username, password=password) #user authenticate function to verify username and password is currect or not
+            
+            if user :
+                token,_ = Token.objects.get_or_create(user=user) #get_or_create function token thakle nibe ar na thakle create kore dibe. akhane create token er janno _ user kora hoice.
+                login(request, user)
+                return Response({'token':token.key, 'user_id':user.id})
+            else:
+                return Response({'error': 'Invalid credentials'})
+        return Response(serializer.errors)
+    
+    
+class UserLogoutApiview(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        request.user.auth_token.delete()
+        logout(request)
+        return redirect('login')

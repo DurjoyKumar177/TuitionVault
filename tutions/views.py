@@ -6,6 +6,8 @@ from rest_framework.response import Response
 from rest_framework import status, permissions
 from .models import TuitionPost, TuitionApplication
 from .serializers import TuitionPostSerializer
+from django.template.loader import render_to_string
+from django.core.mail import EmailMultiAlternatives
 
 class TuitionPostListAPIView(ListAPIView):
     queryset = TuitionPost.objects.filter(availability=True)
@@ -46,29 +48,9 @@ class ApplyForTuitionAPIView(APIView):
         )
 
     def send_notification_email(self, user, tuition_post):
-        """
-        Sends an email notification to the user and admin after an application is submitted.
-        """
-        # User email
-        user_email_subject = f"Application Submitted for {tuition_post.title}"
-        user_email_body = f"Dear {user.username},\n\nYou have successfully applied for the tuition post: {tuition_post.title}.\n\nThank you for your interest!\n\nBest regards,\nTuition Platform Team"
+        email_subject = "Tuition Application Notification"
+        email_body = render_to_string('applyNotification.html', {'username': user.username, 'tuition_title': tuition_post.title})
 
-        send_mail(
-            user_email_subject,
-            user_email_body,
-            'admin@tuitionplatform.com',  # Sender's email
-            [user.email],
-            fail_silently=False,
-        )
-
-        # Admin email
-        admin_email_subject = f"New Application for {tuition_post.title}"
-        admin_email_body = f"Dear Admin,\n\nA new application has been submitted by {user.username} for the tuition post: {tuition_post.title}.\n\nPlease review the application at your earliest convenience.\n\nBest regards,\nTuition Platform System"
-
-        send_mail(
-            admin_email_subject,
-            admin_email_body,
-            'admin@tuitionplatform.com',  # Sender's email
-            ['admin@tuitionplatform.com'],  # Admin's email
-            fail_silently=False,
-        )
+        email = EmailMultiAlternatives(email_subject, '', to=[user.email])
+        email.attach_alternative(email_body, 'text/html')
+        email.send()

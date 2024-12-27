@@ -19,7 +19,7 @@ class TuitionPost(models.Model):
         SATURDAY = 'Saturday', _('Saturday')
 
     title = models.CharField(max_length=200, verbose_name=_("Tuition Title"))
-    image = models.ImageField(upload_to='tuition_images/', verbose_name=_("Image"))
+    image = models.ImageField(upload_to='tutions/images/', verbose_name=_("Image"))
     class_name = models.CharField(max_length=100, verbose_name=_("Class"))
     subjects = models.TextField(verbose_name=_("Subjects"))  # List of subjects as text
     group = models.CharField(

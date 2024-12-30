@@ -116,3 +116,77 @@ class PersonalInformationSerializer(serializers.ModelSerializer):
 class UserLoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     password = serializers.CharField(required=True)
+
+class ProfileSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
+    degree_certificate = serializers.ImageField(required=False)
+    personal_photo = serializers.ImageField(required=False)
+
+    class Meta:
+        model = PersonalInformation
+        fields = [
+            'user', 'phone_number_1', 'phone_number_2', 'date_of_birth',
+            'address', 'achieved_degree', 'running_degree',
+            'current_organization', 'degree_certificate', 'personal_photo'
+        ]
+    
+    def update(self, instance, validated_data):
+        # Update fields that are passed in the request
+        instance.phone_number_1 = validated_data.get('phone_number_1', instance.phone_number_1)
+        instance.phone_number_2 = validated_data.get('phone_number_2', instance.phone_number_2)
+        instance.date_of_birth = validated_data.get('date_of_birth', instance.date_of_birth)
+        instance.address = validated_data.get('address', instance.address)
+        instance.achieved_degree = validated_data.get('achieved_degree', instance.achieved_degree)
+        instance.running_degree = validated_data.get('running_degree', instance.running_degree)
+        instance.current_organization = validated_data.get('current_organization', instance.current_organization)
+        instance.degree_certificate = validated_data.get('degree_certificate', instance.degree_certificate)
+        instance.personal_photo = validated_data.get('personal_photo', instance.personal_photo)
+        instance.save()
+        return instance
+
+class PasswordChangeSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
+    confirm_new_password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        # Check if the new password matches the confirmation
+        if data['new_password'] != data['confirm_new_password']:
+            raise serializers.ValidationError({"new_password": "The new passwords do not match."})
+
+        return data
+
+    def save(self, user):
+        # Check if the old password is correct
+        if not user.check_password(self.validated_data['old_password']):
+            raise serializers.ValidationError({"old_password": "Old password is incorrect."})
+
+        # Set new password and save
+        user.set_password(self.validated_data['new_password'])
+        user.save()
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        # Ensure the email exists in the system
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("This email is not registered.")
+        return value
+
+    def save(self):
+        email = self.validated_data['email']
+        user = User.objects.get(email=email)
+        # Generate token and send email for password reset
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        reset_link = f"http://localhost:8000/accounts/reset-password/{uid}/{token}/"
+        
+        # Send email with the reset link
+        email_subject = "Password Reset"
+        email_body = render_to_string('password_reset_email.html', {'reset_link': reset_link})
+        email = EmailMultiAlternatives(email_subject, '', to=[user.email])
+        email.attach_alternative(email_body, 'text/html')
+        email.send()
+
+        return user

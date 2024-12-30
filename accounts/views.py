@@ -10,7 +10,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
 from .models import PersonalInformation
-from .serializers import RegistrationSerializer, PersonalInformationSerializer
+from .serializers import RegistrationSerializer, PersonalInformationSerializer,ProfileSerializer, PasswordChangeSerializer, ForgotPasswordSerializer,UserSerializer
 from django.shortcuts import redirect
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate, login, logout
@@ -115,3 +115,68 @@ class UserLogoutApiview(APIView):
         request.user.auth_token.delete()
         logout(request)
         return redirect('login')
+    
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        personal_info = get_object_or_404(PersonalInformation, user=user)
+        serializer = UserSerializer(personal_info)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UpdateUserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ProfileSerializer
+
+    def put(self, request):
+        user = request.user
+        personal_info = get_object_or_404(PersonalInformation, user=user)
+
+        # Pass user data to the serializer to ensure we update the right record
+        serializer = self.serializer_class(personal_info, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Profile updated successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PasswordChangeSerializer
+
+    def post(self, request):
+        user = request.user
+        serializer = self.serializer_class(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save(user=user)
+            return Response({"message": "Password changed successfully."}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ForgotPasswordView(APIView):
+    serializer_class = ForgotPasswordSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+
+        if serializer.is_valid():
+            user = serializer.save()
+            # Generate token and send email for password reset
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            reset_link = f"http://localhost:8000/accounts/reset-password/{uid}/{token}/"
+            
+            # Send email with the reset link
+            email_subject = "Password Reset"
+            email_body = render_to_string('password_reset_email.html', {'reset_link': reset_link})
+            email = EmailMultiAlternatives(email_subject, '', to=[user.email])
+            email.attach_alternative(email_body, 'text/html')
+            email.send()
+            return Response({"message": "Password reset email sent."}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

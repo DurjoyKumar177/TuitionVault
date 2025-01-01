@@ -8,6 +8,7 @@ from .models import TuitionPost, TuitionApplication
 from .serializers import TuitionPostSerializer
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
+from rest_framework import generics
 
 class TuitionPostListAPIView(ListAPIView):
     queryset = TuitionPost.objects.filter(availability=True)
@@ -16,6 +17,49 @@ class TuitionPostListAPIView(ListAPIView):
 class TuitionPostDetailAPIView(RetrieveAPIView):
     queryset = TuitionPost.objects.all()
     serializer_class = TuitionPostSerializer
+    
+class TuitionPostFilterByClassAPIView(generics.ListAPIView):
+    serializer_class = TuitionPostSerializer
+
+    def get_queryset(self):
+        class_name = self.request.query_params.get('class_name', None)
+        if class_name:
+            return TuitionPost.objects.filter(class_name__icontains=class_name, availability=True)
+        return TuitionPost.objects.filter(availability=True)
+
+# Filter Tuition Posts by Location
+class TuitionPostFilterByLocationAPIView(generics.ListAPIView):
+    serializer_class = TuitionPostSerializer
+
+    def get_queryset(self):
+        location = self.request.query_params.get('location', None)
+        if location:
+            return TuitionPost.objects.filter(location__icontains=location, availability=True)
+        return TuitionPost.objects.filter(availability=True)
+
+# Filter Tuition Posts by Monthly Payment
+class TuitionPostFilterByPaymentAPIView(generics.ListAPIView):
+    serializer_class = TuitionPostSerializer
+
+    def get_queryset(self):
+        min_payment = self.request.query_params.get('min_payment', None)
+        max_payment = self.request.query_params.get('max_payment', None)
+        if min_payment and max_payment:
+            return TuitionPost.objects.filter(monthly_payment__gte=min_payment, monthly_payment__lte=max_payment, availability=True)
+        elif min_payment:
+            return TuitionPost.objects.filter(monthly_payment__gte=min_payment, availability=True)
+        elif max_payment:
+            return TuitionPost.objects.filter(monthly_payment__lte=max_payment, availability=True)
+        return TuitionPost.objects.filter(availability=True)
+    
+class TuitionPostSearchByTitleAPIView(generics.ListAPIView):
+    serializer_class = TuitionPostSerializer
+
+    def get_queryset(self):
+        title_query = self.request.query_params.get('title', None)
+        if title_query:
+            return TuitionPost.objects.filter(title__icontains=title_query, availability=True)
+        return TuitionPost.objects.filter(availability=True)
 
 class ApplyForTuitionAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]

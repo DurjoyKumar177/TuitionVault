@@ -61,6 +61,16 @@ class TuitionPostSearchByTitleAPIView(generics.ListAPIView):
             return TuitionPost.objects.filter(title__icontains=title_query, availability=True)
         return TuitionPost.objects.filter(availability=True)
 
+class DropdownOptionsAPIView(APIView):
+
+    def get(self, request, *args, **kwargs):
+        field = self.kwargs.get('field')
+        if field not in ['class_name', 'location', 'group']:
+            return Response({"error": "Invalid field name"}, status=400)
+
+        values = TuitionPost.objects.filter(availability=True).values_list(field, flat=True).distinct()
+        return Response(sorted(values))
+
 class ApplyForTuitionAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

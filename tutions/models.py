@@ -21,7 +21,7 @@ class TuitionPost(models.Model):
     title = models.CharField(max_length=200, verbose_name=_("Tuition Title"))
     image = models.ImageField(upload_to='tutions/images/', verbose_name=_("Image"))
     class_name = models.CharField(max_length=100, verbose_name=_("Class"))
-    subjects = models.TextField(verbose_name=_("Subjects"))  # List of subjects as text
+    subjects = models.TextField(verbose_name=_("Subjects"))  # Comma-separated
     group = models.CharField(
         max_length=20,
         choices=GroupChoices.choices,
@@ -65,13 +65,14 @@ class TuitionApplication(models.Model):
     )
     applied_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Applied At"))
     is_approved = models.BooleanField(default=False, verbose_name=_("Is Approved"))
+    approved_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         unique_together = ('tuition_post', 'user')  # Ensure a user applies only once per post
 
     def save(self, *args, **kwargs):
         if self.is_approved:
-            # Mark tuition post as unavailable if approved
+            # Marking tuition post as unavailable if approved
             self.tuition_post.availability = False
             self.tuition_post.save()
         super().save(*args, **kwargs)

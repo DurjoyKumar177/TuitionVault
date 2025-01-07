@@ -18,6 +18,7 @@ from rest_framework.permissions import IsAuthenticated
 from . import serializers
 from . import models
 from rest_framework import viewsets
+from django.http import JsonResponse
 
 class accountsViewset(viewsets.ModelViewSet):
     queryset = models.PersonalInformation.objects.all()
@@ -32,8 +33,15 @@ class UserRegistrationApiview(APIView):
         if serializer.is_valid():
             user = serializer.save()  # Save user and get the instance
             request.session["temp_user_id"] = user.id  # Store user ID in the session
-            return redirect('personal_info')  # Redirect to the personal info form
-
+            request.session.save()
+            return JsonResponse({
+                "message": "Registration successful", 
+                "status": "ok", 
+                "user_id": user.id
+                }, status=201)  # Redirect to the personal info form
+        
+        else:
+            print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ActivateUserView(APIView):
@@ -52,9 +60,10 @@ class ActivateUserView(APIView):
 
 class PersonalInformationView(APIView):
     serializer_class = PersonalInformationSerializer
-
-    def post(self, request):
+    
+    def post(self, request):       
         user = None
+        # Check if the user is authenticated, else check the session ID
         if request.user.is_authenticated:
             user = request.user
         elif request.session.get("temp_user_id"):
@@ -73,7 +82,7 @@ class PersonalInformationView(APIView):
             # Send confirmation email to activate the account
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))  # User's unique ID
-            confirm_link = f"http://localhost:8000/accounts/verify/{uid}/{token}"  # Adjust the URL path
+            confirm_link = f"http://127.0.0.1:5501/active_account.html?uid={uid}&token={token}"  # Adjust the URL path
 
             email_subject = "Please activate your account"
             email_body = render_to_string('confirm_email.html', {'confirm_link': confirm_link})
@@ -89,7 +98,7 @@ class PersonalInformationView(APIView):
             return Response({"message": "Personal information saved and verification email sent."}, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+   
 class UserLoginApiview(APIView):
     def post(self, request):
         serializer = serializers.UserLoginSerializer(data=self.request.data)
@@ -125,15 +134,20 @@ class UserProfileView(APIView):
         serializer = UserSerializer(personal_info)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
 class UpdateUserProfileView(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ProfileSerializer
 
+    def get(self, request):
+        user = request.user
+        personal_info = get_object_or_404(PersonalInformation, user=user)
+        serializer = self.serializer_class(personal_info)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     def put(self, request):
         user = request.user
         personal_info = get_object_or_404(PersonalInformation, user=user)
-
+        
         # Pass user data to the serializer to ensure we update the right record
         serializer = self.serializer_class(personal_info, data=request.data, partial=True)
 
@@ -141,7 +155,6 @@ class UpdateUserProfileView(APIView):
             serializer.save()
             return Response({"message": "Profile updated successfully."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
@@ -152,9 +165,9 @@ class ChangePasswordView(APIView):
         serializer = self.serializer_class(data=request.data)
 
         if serializer.is_valid():
-            serializer.save(user=user)
+            serializer.save(user=request.user)
             return Response({"message": "Password changed successfully."}, status=status.HTTP_200_OK)
-
+        print(serializer.errors)  # Debug print
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -169,7 +182,7 @@ class ForgotPasswordView(APIView):
             # Generate token and send email for password reset
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
-            reset_link = f"http://localhost:8000/accounts/reset-password/{uid}/{token}/"
+            reset_link = f"http://127.0.0.1:5501/reset_pass.html?uid={uid}&token={token}"
             
             # Send email with the reset link
             email_subject = "Password Reset"
@@ -180,3 +193,30 @@ class ForgotPasswordView(APIView):
             return Response({"message": "Password reset email sent."}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ResetPasswordView(APIView):
+    def post(self, request, uid, token):
+        try:
+            uid = force_str(urlsafe_base64_decode(uid))
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return Response({"error": "Invalid user or token."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not default_token_generator.check_token(user, token):
+            return Response({"error": "Invalid or expired token."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get the new password and confirm password from the request
+        new_password = request.data.get('new_password')
+        confirm_password = request.data.get('confirm_password')
+
+        if not new_password or not confirm_password:
+            return Response({"error": "Both password fields are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if new_password != confirm_password:
+            return Response({"error": "Passwords do not match."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Set the new password
+        user.set_password(new_password)
+        user.save()
+
+        return Response({"message": "Password has been reset successfully."}, status=status.HTTP_200_OK)

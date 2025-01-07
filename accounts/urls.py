@@ -20,4 +20,5 @@ urlpatterns = [
     # Change password and Forgot password paths
     path('change-password/', views.ChangePasswordView.as_view(), name='change-password'),
     path('forgot-password/', views.ForgotPasswordView.as_view(), name='forgot-password'),
+    path('reset-password/<uid>/<token>/', views.ResetPasswordView.as_view(), name='reset-password'),
 ]

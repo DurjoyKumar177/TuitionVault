@@ -167,7 +167,6 @@ class ChangePasswordView(APIView):
         if serializer.is_valid():
             serializer.save(user=request.user)
             return Response({"message": "Password changed successfully."}, status=status.HTTP_200_OK)
-        print(serializer.errors)  # Debug print
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -178,18 +177,23 @@ class ForgotPasswordView(APIView):
         serializer = self.serializer_class(data=request.data)
 
         if serializer.is_valid():
-            user = serializer.save()
-            # Generate token and send email for password reset
+            email = serializer.validated_data['email']
+            user = User.objects.get(email=email)
+
+            # Generate token and UID for password reset
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+            # Generate reset link pointing to your frontend page
             reset_link = f"http://127.0.0.1:5501/reset_pass.html?uid={uid}&token={token}"
-            
+
             # Send email with the reset link
-            email_subject = "Password Reset"
+            email_subject = "Password Reset Request"
             email_body = render_to_string('password_reset_email.html', {'reset_link': reset_link})
-            email = EmailMultiAlternatives(email_subject, '', to=[user.email])
-            email.attach_alternative(email_body, 'text/html')
-            email.send()
+            email_message = EmailMultiAlternatives(email_subject, '', to=[user.email])
+            email_message.attach_alternative(email_body, 'text/html')
+            email_message.send()
+
             return Response({"message": "Password reset email sent."}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

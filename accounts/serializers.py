@@ -173,23 +173,3 @@ class ForgotPasswordSerializer(serializers.Serializer):
         if not User.objects.filter(email=value).exists():
             raise serializers.ValidationError("This email is not registered.")
         return value
-
-    def save(self):
-        email = self.validated_data['email']
-        user = User.objects.get(email=email)
-        
-        # Generate token and UID for password reset
-        token = default_token_generator.make_token(user)
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-
-        # Generate reset link pointing to your frontend page
-        reset_link = f"http://127.0.0.1:5501/reset_pass.html?uid={uid}&token={token}"
-
-        # Send email with the reset link
-        email_subject = "Password Reset Request"
-        email_body = render_to_string('password_reset_email.html', {'reset_link': reset_link})
-        email_message = EmailMultiAlternatives(email_subject, '', to=[user.email])
-        email_message.attach_alternative(email_body, 'text/html')
-        email_message.send()
-
-        return user

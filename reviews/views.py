@@ -2,20 +2,13 @@ from rest_framework import generics, permissions
 from .models import TuitionReview
 from .serializers import TuitionReviewSerializer
 
-class TuitionReviewListCreateAPIView(generics.ListCreateAPIView):
-    queryset = TuitionReview.objects.all()
+class CreateReviewAPIView(generics.CreateAPIView):
     serializer_class = TuitionReviewSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        # Restrict reviews to the ones created by the authenticated user
-        return TuitionReview.objects.filter(reviewer=self.request.user)
-
-class TuitionReviewDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = TuitionReview.objects.all()
+class ViewReviewAPIView(generics.ListAPIView):
     serializer_class = TuitionReviewSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Restrict to reviews created by the authenticated user
-        return TuitionReview.objects.filter(reviewer=self.request.user)
+        tuition_post_id = self.kwargs.get('tuition_post_id')
+        return TuitionReview.objects.filter(application__tuition_post_id=tuition_post_id)

@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from tutions.models import TuitionApplication
 
 class TuitionReview(models.Model):
-    application = models.OneToOneField(
+    application = models.ForeignKey(
         TuitionApplication,
         on_delete=models.CASCADE,
         related_name="review",

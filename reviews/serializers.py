@@ -1,28 +1,26 @@
 from rest_framework import serializers
-from .models import TuitionReview
-
+from .models import TuitionReview, TuitionApplication
 
 class TuitionReviewSerializer(serializers.ModelSerializer):
-    reviewer = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    reviewer_name = serializers.CharField(source='reviewer.username', read_only=True)  # Added reviewer name
 
     class Meta:
         model = TuitionReview
-        fields = ['id', 'application', 'reviewer', 'rating', 'comment', 'reviewed_at']
+        fields = ['id', 'rating', 'comment', 'reviewer_name', 'reviewed_at']  # Include reviewer_name
         read_only_fields = ['reviewed_at']
 
     def validate(self, data):
-        application = data.get('application')
+        request = self.context['request']
+        user = request.user
 
-        # Ensure the application belongs to the user
-        if application.user != self.context['request'].user:
+        try:
+            application = TuitionApplication.objects.get(
+                tuition_post_id=self.context['view'].kwargs.get('tuition_post_id'),
+                user=user,
+                is_approved=True
+            )
+        except TuitionApplication.DoesNotExist:
             raise serializers.ValidationError("You can only review your own approved tuition applications.")
 
-        # Ensure the application is approved
-        if not application.is_approved:
-            raise serializers.ValidationError("You cannot review a tuition application that is not approved.")
-
-        # Ensure the review doesn't already exist
-        if TuitionReview.objects.filter(application=application).exists():
-            raise serializers.ValidationError("A review for this tuition has already been submitted.")
-
+        data['application'] = application
         return data

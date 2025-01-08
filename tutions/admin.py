@@ -8,7 +8,7 @@ class TuitionApplicationInline(admin.TabularInline):
     readonly_fields = ('user', 'applied_at')
 
 class TuitionPostAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'class_name', 'location', 'availability')  # Fields to display
+    list_display = ('title','id', 'class_name', 'location', 'availability')  # Fields to display
     search_fields = ('id', 'title', 'class_name', 'location')  # Searchable fields
     list_filter = ('group', 'availability')  # Filters for sidebar
     inlines = [TuitionApplicationInline]

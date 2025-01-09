@@ -5,6 +5,10 @@ from .serializers import TuitionReviewSerializer
 class CreateReviewAPIView(generics.CreateAPIView):
     serializer_class = TuitionReviewSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+    def perform_create(self, serializer):
+        # Automatically set the reviewer to the authenticated user
+        serializer.save(reviewer=self.request.user)
 
 class ViewReviewAPIView(generics.ListAPIView):
     serializer_class = TuitionReviewSerializer

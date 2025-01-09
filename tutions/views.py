@@ -9,17 +9,10 @@ from .serializers import TuitionPostSerializer
 from django.template.loader import render_to_string
 from django.core.mail import EmailMultiAlternatives
 from rest_framework import generics
-from rest_framework import pagination
-
-class TuitionPostPagination(pagination.PageNumberPagination):
-    page_size = 3 # items per page
-    page_size_query_param = page_size
-    max_page_size = 100
 
 class TuitionPostListAPIView(ListAPIView):
     queryset = TuitionPost.objects.filter(availability=True).order_by('-created_at')
     serializer_class = TuitionPostSerializer
-    pagination_class = TuitionPostPagination
 
 class TuitionPostDetailAPIView(RetrieveAPIView):
     queryset = TuitionPost.objects.all()

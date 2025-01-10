@@ -31,7 +31,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
-CSRF_TRUSTED_ORIGINS = ['https://tuitionvault.onrender.com','https://*.127.0.0.1']
+CSRF_TRUSTED_ORIGINS = ['https://tuitionvault.onrender.com','https://durjoykumar177.github.io','https://*.127.0.0.1']
 # Application definition
 
 INSTALLED_APPS = [
@@ -69,7 +69,7 @@ CSRF_COOKIE_SECURE = True
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
-    'https://tuitionvault.onrender.com', 'https://durjoykumar177.github.io/TuitionVault_Frontend/',
+    'https://tuitionvault.onrender.com', 'https://durjoykumar177.github.io',
 ]  
 
 ROOT_URLCONF = 'TuitionVault.urls'

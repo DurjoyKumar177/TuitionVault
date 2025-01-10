@@ -64,8 +64,13 @@ MIDDLEWARE = [
 SESSION_ENGINE = 'django.contrib.sessions.backends.db' 
 SESSION_COOKIE_NAME = 'sessionid' 
 
-CORS_ALLOW_CREDENTIALS = True 
-CORS_ALLOW_ALL_ORIGINS = True  
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    'https://tuitionvault.onrender.com',
+]
 
 ROOT_URLCONF = 'TuitionVault.urls'
 

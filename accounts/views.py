@@ -82,7 +82,7 @@ class PersonalInformationView(APIView):
             # Send confirmation email to activate the account
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))  # User's unique ID
-            confirm_link = f"http://127.0.0.1:5501/active_account.html?uid={uid}&token={token}"  # Adjust the URL path
+            confirm_link = f"https://durjoykumar177.github.io/TuitionVault_Frontend/active_account.html?uid={uid}&token={token}"  # Adjust the URL path
 
             email_subject = "Please activate your account"
             email_body = render_to_string('confirm_email.html', {'confirm_link': confirm_link})
@@ -185,7 +185,7 @@ class ForgotPasswordView(APIView):
             uid = urlsafe_base64_encode(force_bytes(user.pk))
 
             # Generate reset link pointing to your frontend page
-            reset_link = f"http://127.0.0.1:5501/reset_pass.html?uid={uid}&token={token}"
+            reset_link = f"https://durjoykumar177.github.io/TuitionVault_Frontend/reset_pass.html?uid={uid}&token={token}"
 
             # Send email with the reset link
             email_subject = "Password Reset Request"

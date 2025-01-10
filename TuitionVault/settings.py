@@ -32,8 +32,20 @@ DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
 CSRF_TRUSTED_ORIGINS = ['https://tuitionvault.onrender.com','https://durjoykumar177.github.io','https://*.127.0.0.1']
-# Application definition
 
+SESSION_ENGINE = 'django.contrib.sessions.backends.db' 
+SESSION_COOKIE_NAME = 'sessionid' 
+
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = 'None'
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    'https://tuitionvault.onrender.com', 'https://durjoykumar177.github.io',
+] 
+
+# Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -60,17 +72,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
-SESSION_ENGINE = 'django.contrib.sessions.backends.db' 
-SESSION_COOKIE_NAME = 'sessionid' 
-
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-
-CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [
-    'https://tuitionvault.onrender.com', 'https://durjoykumar177.github.io',
-]  
 
 ROOT_URLCONF = 'TuitionVault.urls'
 

@@ -66,9 +66,10 @@ class PersonalInformationSerializer(serializers.ModelSerializer):
         return value
 
     def validate_phone_number_2(self, value):
-        # Optional phone number, so we don't need to enforce any format if it's not provided
-        if PersonalInformation.objects.filter(phone_number_2=value).exists():
-            raise serializers.ValidationError("Phone number 2 already exists.")
+        # Skip validation if the phone number is blank or null
+        if value:
+            if PersonalInformation.objects.filter(phone_number_2=value).exists():
+                raise serializers.ValidationError("Phone number 2 already exists.")
         return value
 
     def validate_date_of_birth(self, value):
@@ -105,14 +106,14 @@ class PersonalInformationSerializer(serializers.ModelSerializer):
             date_of_birth=self.validated_data['date_of_birth'],
             address=self.validated_data['address'],
             achieved_degree=self.validated_data['achieved_degree'],
-            running_degree=self.validated_data['running_degree'],
-            current_organization=self.validated_data['current_organization'],
+            running_degree=self.validated_data.get('running_degree', ""),
+            current_organization=self.validated_data.get('current_organization', ""),
             degree_certificate=self.validated_data['degree_certificate'],
             personal_photo=self.validated_data['personal_photo'],
         )
         personal_info.save()
         return personal_info
-
+    
 class UserLoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     password = serializers.CharField(required=True)

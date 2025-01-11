@@ -60,50 +60,40 @@ class PersonalInformationView(APIView):
     serializer_class = PersonalInformationSerializer
 
     def post(self, request):
-        try:
-            print("Request data received:", request.data)
-            
-            # Extract user_id from the request data
-            user_id = request.data.get("user_id")
-            if not user_id:
-                return Response({"message": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Retrieve the user
-            user = get_object_or_404(User, id=user_id)
+        user_id = request.data.get("user_id")
+        if not user_id:
+            return Response(
+                {"errors": {"user_id": ["This field is required."]}},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-            # Initialize the serializer with the request data and context
-            serializer = self.serializer_class(data=request.data, context={'request': request, 'user': user})
+        user = get_object_or_404(User, id=user_id)
 
-            if serializer.is_valid():
-                # Save the validated data to the database
-                serializer.save()
+        serializer = self.serializer_class(
+            data=request.data,
+            context={'request': request, 'user': user}
+        )
+        if serializer.is_valid():
+            serializer.save()
 
-                # Generate activation token and link
-                token = default_token_generator.make_token(user)
-                uid = urlsafe_base64_encode(force_bytes(user.pk))  # Encode the user ID
-                confirm_link = f"https://durjoykumar177.github.io/TuitionVault_Frontend/active_account.html?uid={uid}&token={token}"
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            confirm_link = (
+                f"https://durjoykumar177.github.io/TuitionVault_Frontend/active_account.html?uid={uid}&token={token}"
+            )
 
-                # Prepare and send the activation email
-                email_subject = "Please activate your account"
-                email_body = render_to_string('confirm_email.html', {'confirm_link': confirm_link})
-                email = EmailMultiAlternatives(email_subject, '', to=[user.email])
-                email.attach_alternative(email_body, 'text/html')
-                email.send()
+            email_subject = "Please activate your account"
+            email_body = render_to_string('confirm_email.html', {'confirm_link': confirm_link})
+            email = EmailMultiAlternatives(email_subject, '', to=[user.email])
+            email.attach_alternative(email_body, 'text/html')
+            email.send()
 
-                return Response({"message": "Personal information saved and verification email sent."}, status=status.HTTP_201_CREATED)
-            
-            # Handle validation errors
-            print("Serializer validation errors:", serializer.errors)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        except User.DoesNotExist:
-            # Handle the case where the user is not found
-            return Response({"message": "User not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        except Exception as e:
-            # Catch and log unexpected errors
-            print("An unexpected error occurred:", str(e))
-            return Response({"message": "An unexpected error occurred. Please try again later."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)       
+            return Response(
+                {"message": "Personal information saved and verification email sent."},
+                status=status.HTTP_201_CREATED
+            )
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)  
 
    
 class UserLoginApiview(APIView):
